@@ -75,10 +75,10 @@ var deleteFolderRecursive = function(path) {
         }
       });
       fs.rmdirSync(path);
-      fs.mkdirSync(path);
     }
 }
 deleteFolderRecursive(tempdir);
+fs.mkdirSync(tempdir);
 
 // url
 function url (x, y, z) {
@@ -94,7 +94,10 @@ for (xi = runtime_params.xlo; xi <= runtime_params.xhi; xi++) {
     fs.mkdirSync(tempdir + "/" + xi);
     for (yi = runtime_params.ylo; yi <= runtime_params.yhi; yi++) {
         tilemap_matrix_async_running++;
-        request(url(xi,yi,runtime_params.z), {encoding: binary}, function(error, response, body) {
+        request(url(xi,yi,runtime_params.z), {encoding: 'binary'}, function(error, response, body) {
+            if (error) {
+                console.error('error: ' + error);
+            }
             //fs.writeFile(tempdir + "/" + xi + "/" + yi + ".jpg", body, 'binary', function(err) {console.log(error);});
             fs.writeFile(tempdir + "/" + xi + "/" + yi + ".jpg", body, 'binary', function(err) {
                 if (err) {
@@ -103,7 +106,17 @@ for (xi = runtime_params.xlo; xi <= runtime_params.xhi; xi++) {
                 tilemap_matrix_async_running--;
             });
         });
-        tilemap_matrix[xi][yi] = null;
+        /*request(url(xi,yi,runtime_params.z),null,function(){
+            tilemap_matrix_async_running--;
+        }).pipe(fs.createWriteStream(tempdir + '/' + xi + '/' + yi + ".jpg"));     */   
+        tilemap_matrix[xi][yi] = tempdir + '/' + xi + '/' + yi + ".jpg";
     }
 }
 console.log(tilemap_matrix);
+while (tilemap_matrix_async_running != 0 && debug) {
+    console.log(tilemap_matrix_async_running);
+}
+
+if (debug) {
+    console.log("done");
+}
