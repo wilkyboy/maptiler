@@ -3,6 +3,7 @@ console.log("starting maptiler");
 var gm = require('gm');
 var fs = require('fs');
 var request = require('request');
+var download = require('download');
 
 var dir = process.cwd() + "/output";
 var tempdir = process.cwd() + "/temp";
@@ -25,7 +26,7 @@ if (!fs.existsSync(tempdir)) {
 
 var debug = false;
 var args = process.argv;
-var runtime_params = {
+var rp = {
     xlo: 0,
     xhi: 0,
     ylo: 0,
@@ -38,19 +39,19 @@ for (i = 2; i < args.length; i++) {
         //help
         console.log("help not implemented yet");
     } else if (args[i] == "-xlo") {
-        runtime_params.xlo = args[i+1];
+        rp.xlo = args[i+1];
         i++;
     } else if (args[i] == "-xhi") {
-        runtime_params.xhi = args[i+1];
+        rp.xhi = args[i+1];
         i++;
     } else if (args[i] == "-ylo") {
-        runtime_params.ylo = args[i+1];
+        rp.ylo = args[i+1];
         i++;
     } else if (args[i] == "-yhi") {
-        runtime_params.yhi = args[i+1];
+        rp.yhi = args[i+1];
         i++;
     } else if (args[i] == "-z") {
-        runtime_params.z = args[i+1];
+        rp.z = args[i+1];
         i++;
     } else if (args[i] == "-d") {
         debug = true;
@@ -60,7 +61,7 @@ for (i = 2; i < args.length; i++) {
 }
 
 if (debug) {
-    console.log(runtime_params);
+    console.log(rp);
 }
 
 // wipe temp folder
@@ -87,8 +88,40 @@ function url (x, y, z) {
 
 var tilemap_matrix_async_running = 0;
 
-// fetch tiles
+//fetch tiles
 var tilemap_matrix = {};
+for (xi = rp.xlo; xi <= rp.xhi; xi++) {
+    tilemap_matrix[xi] = {};
+    for (yi = rp.ylo; yi <= rp.yhi; yi++) {
+        tilemap_matrix[xi][yi] = {url: url(xi,yi,rp.z), path: null, done: false}
+    }
+}
+
+//fetch tiles
+for (xi = rp.xlo; xi <= rp.xhi; xi++) {
+    fs.mkdirSync(tempdir + "/" + xi);
+    for (yi = rp.ylo; yi <= rp.yhi; yi++) {
+        console.log(xi + "," + yi);
+        var run = true;
+        var path = tempdir + "/" + xi + "/" + yi + ".jpg"
+        console.log("do");
+        download(tilemap_matrix[xi][yi].url).then(data => {
+            console.log("starting");
+            fs.writeFileSync(path, data);
+            tilemap_matrix[xi][yi].path = path;
+            tilemap_matrix[xi][yi].done = true;
+            run = false;
+            console.log("falsed");
+        });
+        while (run){
+            // blocking
+        }
+        console.log("done");
+    }
+}
+
+// fetch tiles
+/*var tilemap_matrix = {};
 for (xi = runtime_params.xlo; xi <= runtime_params.xhi; xi++) {
     tilemap_matrix[xi] = {};
     fs.mkdirSync(tempdir + "/" + xi);
@@ -108,7 +141,7 @@ for (xi = runtime_params.xlo; xi <= runtime_params.xhi; xi++) {
         });
         /*request(url(xi,yi,runtime_params.z),null,function(){
             tilemap_matrix_async_running--;
-        }).pipe(fs.createWriteStream(tempdir + '/' + xi + '/' + yi + ".jpg"));     */   
+        }).pipe(fs.createWriteStream(tempdir + '/' + xi + '/' + yi + ".jpg"));     */  /* 
         tilemap_matrix[xi][yi] = tempdir + '/' + xi + '/' + yi + ".jpg";
     }
 }
@@ -119,4 +152,4 @@ while (tilemap_matrix_async_running != 0 && debug) {
 
 if (debug) {
     console.log("done");
-}
+}*/
